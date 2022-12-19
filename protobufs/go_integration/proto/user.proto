@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package  my.user;
+
+option go_package="./go_integration_with_protobuf";
+
+message User {
+    uint32 id = 1;
+    string name = 2;
+}

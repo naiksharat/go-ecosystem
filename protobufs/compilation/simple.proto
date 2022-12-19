@@ -1,0 +1,21 @@
+// Protocol buffer compiler & compilation:
+//-----------------------------------------
+// brew install protoc
+// protoc --cpp_out=. *.proto
+// generates .cpp and .h files
+
+// for go: https://developers.google.com/protocol-buffers/docs/reference/go-generated
+// 1. go install google.golang.org/protobuf/cmd/protoc-gen-go@latest -> protoc-gen-go = go code gen plugin for protoc
+// 2. go mod init (package name)
+// 3. proto file: option go_package=(go package name)
+        //  This is where go files would be created
+        //  The go files will have the package name mentioned in the path (the last part after /)
+// 4. protoc -I(proto folder) --go_opt=module=(go package name) --go_out=. (proto folder)/*.proto
+
+
+
+syntax = "proto3";
+
+message m1 {
+    uint32 id = 1;
+}

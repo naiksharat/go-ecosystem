@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package example.maps;
+
+option go_package="./go_integration_with_protobuf";
+
+message IdWrapper{
+  int32 id = 1;
+}
+
+message Maps {
+  map<string, IdWrapper> ids = 1;
+}

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package example.proto;
+
+option go_package="./go_integration_with_protobuf";
+
+message Dummy{
+  int32 id = 1;
+  string name = 2;
+}
+
+message Complex{
+  Dummy d = 1;
+  repeated Dummy d_mul =2;
+}

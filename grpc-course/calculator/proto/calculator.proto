@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package calculator;
+
+option go_package="grpc-course/calculator/proto";
+
+message CalcRequest {
+  int32 number = 1; // to test -ve numbers. Otherwise use uint32
+}
+
+message CalcResponse {
+  float sqrt = 1;
+}
+
+service CalcService {
+  rpc Sqrt (CalcRequest) returns (CalcResponse);
+}

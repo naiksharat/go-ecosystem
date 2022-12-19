@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package  example.enum;
+
+option go_package="./go_integration_with_protobuf";
+
+enum EyeColor {
+  UNSPECIFIED = 0;
+  EYECOLOR_BLACK = 1;
+}
+
+message PersonalityTraits {
+  EyeColor eye_color = 1;
+}

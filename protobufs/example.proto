@@ -1,0 +1,263 @@
+// Why protobuf?
+// lightweight - better than json
+// easy data evolution - compatibility, remove, rename field, type conversion
+
+// Use cases:
+// *  store large amount of data locally consuming less storage - protofile (schema) + encoded data (data) > json(schema + data) 
+//        Con: not readable. need to decode data
+// * lightweight RPC calls - consuming less bandwidth
+
+//0. Google API proto examples
+//  https://github.com/googleapis/googleapis/tree/master/google/type 
+
+syntax = "proto3";
+
+//1. import
+import "import_example.proto"; // import another file // should be visible to proto_path. --proto_path=${workspaceRoot}/protobufs
+
+message UseImport { 
+    Person a = 2;   // Person from import_example.proto file 
+}
+
+
+//2. package (proto file with package directive are considered different. Accessing message constructs is different from above)
+import "package_example.proto";
+
+message UsePackage {
+    package.my.ImportedPackage  m =1; //<package_name>.<message_name>
+}
+
+/* //package_example.proto
+syntax = "proto3";
+
+package package.my;
+
+message ImportedPackage { 
+}
+*/
+
+
+//3. enum
+enum EyeColor {
+    EYE_COLOR_UNSPECIFIED = 0; // default enum value is generally assigned to 0
+    EYE_COLOR_BLACK = 1;
+    EYE_COLOR_BROWN = 2;
+    EYE_COLOR_GREEN = 3;
+}
+
+/* 4.
+ * multi line comment
+ * message message_name { type field = tag; }
+ * 
+ * default values:
+ * bool = false
+ * String = ""
+ * num = 0 / 0.0
+ 
+ * enum starts with 0 -> unspecified
+ * message starts with tag 1
+ */
+message Account {
+    uint32 id = 1;
+    string name = 2;
+    bytes thumbnail = 3; // picture in jpeg format
+    bool is_verified = 4 [default = false];
+    float height = 5; // in cms
+ 
+    repeated string phone = 6;
+
+    EyeColor eye_color = 7;
+}
+
+
+/* 
+ * 5. Nesting & Gotchas 
+ */
+message Test {
+    message Nested { // scope is limited to Test
+        
+    }
+
+
+
+    Nested a = 1;
+
+    // enum Nested { // invalid `Nested` already present
+
+    // }
+
+   //  Nested b = 1; // 1 already used
+}
+
+message Test2 {
+    //Nested a = 1; // Nested (defined in Test message) is out of scope
+    Test.Nested b =2; // Accessing Nested type/message
+    // Test.a m = 3; // invalid -  a is not a type
+
+}
+
+// Nesting can be done in 2 ways
+// top down - 
+/*
+syntax = "proto3";
+
+message City {
+  string name = 1;
+  string zip_code = 2;
+  string country_name = 3;
+
+  message Street {
+    string name = 1;
+    City city = 2;
+  
+    message Building {
+      string name = 1;
+      uint32 number = 2;
+      Street street = 3;
+    }
+  }
+}
+
+message Address {
+  City city = 1;
+  City.Street street = 2;
+  City.Street.Building building = 3;
+}
+*/
+// bottom up -
+/*
+syntax = "proto3";
+
+message Building {
+  message Street {
+    message City {
+      string name = 1;
+      string zip_code = 2;
+      string country_name = 3;
+    }
+    
+    string name = 1;
+    City city = 2;
+  }
+
+  string name = 1;
+  uint32 number = 2;
+  Street street = 3;
+}
+
+message Address {
+  Building.Street.City city = 1;
+  Building.Street street = 2;
+  Building building = 3;
+}
+*/
+
+/* 6.
+// Protocol buffer compiler & compilation:
+//-----------------------------------------
+// brew install protoc
+// protoc --cpp_out=. *.proto
+// generates .cpp and .h files
+
+// for go: https://developers.google.com/protocol-buffers/docs/reference/go-generated
+// 1. go install google.golang.org/protobuf/cmd/protoc-gen-go@latest -> protoc-gen-go = go code gen plugin for protoc
+// 2. go mod init (package name)
+// 3. proto file: option go_package=./(go package name)
+// 4. protoc -I (proto folder) --go_opt=module=(go package name) --go_out=. (proto folder)/*.proto
+*/
+
+
+
+
+/* 7.
+Maps:
+-----
+map<string, ID> a = 3;
+
+One of:
+---------
+message Choice {
+  oneof result {
+    string msg = 1;
+    int32 id = 2;
+  }
+}
+*/
+
+
+/* 9.
+
+Data evolution with protobuf and Rules:
+-----------------------------------------
+
+* Don't remove/change tags - reserve them and don't use them
+    * message Address {
+      reserved 2, 8 to 13
+      reserved "mid_name", "last_address"
+      string f_name = 1;
+      string l_name = 3;
+    }  
+
+* Add extra fields if needed - Forward and backward compatibility is supported - You can rename fields as well (example 3)
+    * if client has 1 less field than server -  missing field is set to default in server 
+    * if client has 1 more field than server - extra field is ignored on server side
+    * if client has {name(string), id(int)} & server has {first_name(string), id(int)} - server treats `name` from client as `first_name`
+    * if client has {f_name(string - 1 ), l_name(string - 2)} & server has {l_name(string - 1), f_name(string - 2)} -
+               server.l_name = client.f_name
+               server.f_name = client.l_name
+      ORDER MATTERS - because TAG MATTERS
+
+* type can be changed - int32 -> int64 - but check doc
+
+
+*/
+
+
+/*8.
+
+MISC:
+
+Proto Conversion:
+-----------
+  byte string -----> unmarshal/decode/deserailize ----->  [[[[[ proto ]]]]] -----> marshal/encode/serailize -----> byte string 
+  []byte(json string) -----> unmarshal/decode/deserailize ----->  [[[[[ protojson ]]]]] -----> marshal/encode/serailize -----> json string 
+
+
+
+  Decode protobuf message:
+  ------------------------
+  no protofile: 
+      * command: cat simple.bin | protoc --decode_raw    //.bin byte string of message
+      * o/p : 1: 1
+              2: "Sharat"
+  
+  proto file:
+      *  cat ../simple.bin | protoc --decode=my.user.User user.proto 
+            id: 1
+            name: "Sharat"
+
+
+   
+  Encode protobuf message:
+  ------------------------ 
+  cat ../simple.bin | protoc --decode=my.user.User user.proto | protoc --encode=my.user.User user.proto > ../simple2.bin
+
+
+
+  Scalar types and default and deprecattion:
+  -----------
+  Varints:
+  uint32
+  int32 int64 -- good at serializing +ve values, but not -ve values - use if no. of +ve numbers > no. of -ve numbers
+  sint32, sint64 -- good at serializing -ve values, but not +ve values - use if no. of -ve numbers > no. of +ve numbers
+
+  fixed int:
+  sfixed32, fixed32
+
+    bool is_verified = 4 [default = false];
+    bool is_verified = 4 [deprecated = true];
+
+  Well -known types:
+  https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#index
+
+*/

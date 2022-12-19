@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package  example.oneof;
+
+option go_package="./go_integration_with_protobuf";
+
+message Choice {
+  oneof result {
+    string msg = 1;
+    int32 id = 2;
+  }
+}
