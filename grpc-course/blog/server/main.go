@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
+	"log"
+	"net"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
-	"log"
-	"net"
 
 	pb "grpc-course/blog/proto"
 )
